@@ -64,47 +64,13 @@
     $log->debug( "Entering general section." );
     
     # poll time
-    my $poll = $yaml->[0]->{ general }->{ 'poll-time' } || undef;
-    if ( defined $poll )
-    {
-      $self->{ poll } = $poll;
-      $log->info( "Setting poll time to ${poll}s." );
-    }
-    else
-    {
-      $log->warn( "Missing poll-time option! Using default of $self->{ poll }." );
-    }
+    $self->loadGeneralSetting( $yaml , 'poll-time' , 'poll' , '^\d+$' );
     
     # request delay
-    my $request = $yaml->[0]->{ general }->{ 'request-delay' } || undef;
-    if ( defined $request )
-    {
-      $self->{ request } = $request;
-      $log->info( "Setting request delay to ${request}s." );
-    }
-    else
-    {
-      $log->warn( "Missing request-delay option! Using default of $self->{ request }." );
-    }
+    $self->loadGeneralSetting( $yaml , 'request-delay' , 'request' , '^\d+$' );
     
     # target currency
-    my $target = lc( $yaml->[0]->{ general }->{ 'target' } ) || undef;
-    if ( defined $target )
-    {
-      if ( $target =~ /^(btc|ltc|doge)$/ )
-      {
-        $self->{ target } = $target;
-        $log->info( "Setting target currency to " . uc( $target ) . "." );
-      }
-      else
-      {
-        $log->warn( "Unsupported target currency(${target})! Using default of " . uc( $self->{ target } ) . "." );
-      }
-    }
-    else
-    {
-      $log->warn( "Missing target currency! Using default of " . uc( $self->{ target } ) . "." );
-    }
+    $self->loadGeneralSetting( $yaml , 'target' , 'target' , '^(btc|ltc|doge)$' );
     
     # API keys
     $log->debug( "Entering apikeys section." );
@@ -140,6 +106,44 @@
         $self->{ coinmins }->{ $coin } = $min;
       }
     }
+  }
+  
+  ####################################################################################################
+  # Load setting from the general section
+  # 
+  # Params:
+  #  yaml: YAML::Tiny object for reading config
+  #  config: key of setting to load from config
+  #  setting: Which setting to populate with what's loaded from config
+  #  matches: Optional matching string
+  #
+  ####################################################################################################
+  sub loadGeneralSetting
+  {
+    my $self = shift;
+    my $yaml = shift;
+    my $config = shift;
+    my $setting = shift;
+    my $matches = shift || '';
+    
+    my $value = lc( $yaml->[0]->{ general }->{ $config } ) || undef;
+    if ( defined $value )
+    {
+      if ( $value =~ /$matches/ )
+      {
+        $self->{ $setting } = $value;
+        $log->info( "Setting $config to " . uc( $value ) . "." );
+      }
+      else
+      {
+        $log->warn( "Unsupported ${config} value(${value})! Using default of " . uc( $self->{ $setting } ) . "." );
+      }
+    }
+    else
+    {
+      $log->warn( "Missing $config option! Using default of " . uc( $self->{ $setting } ) . "." );
+    }
+
   }
   
   1;
