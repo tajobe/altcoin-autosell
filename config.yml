@@ -1,0 +1,32 @@
+    ##########
+    # General settings
+    ##########
+    general:
+      poll-time: 300    # Amount of time between polls
+      request-delay: 15 # Delay when we are going to send a request
+      target: btc       # Target currency(btc/ltc/doge)
+    
+    ##########
+    # Any number of API keys for us to monitor/use
+    # 
+    # Format:
+    # exchange: (coinex)
+    #   key: 'API key'
+    #   secret: 'API secret'
+    ##########
+    apikeys:
+      coinex:           # exchange the keys are for(determines what API we need to use)
+        key: ''         # API key
+        secret: ''      # API secret
+    
+    ##########
+    # Min sell amounts for any number of coins (OPTIONAL)
+    # Will not try to make orders when balance is below set amount
+    # 
+    # Format:
+    # coin: amount
+    ##########
+    coins:
+      ltc: 1            # require LTC balance >= 1 before trying to sell
+      lot: 100          # require LOT balance >= 100 before trying to sell
+      
