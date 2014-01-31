@@ -34,7 +34,8 @@
       request    => 15, # request delay in seconds
       target     => 'btc', # target/cashout currency
       apikeys    => {}, # hash of exchange to API key/secret pair
-      coinmins   => {} # min sell amounts for coins(optional, coin => amount)
+      coinmins   => {}, # min sell amounts for coins(optional, coin => amount)
+      excludes   => [] # array of coins to exclude from autosell
     };
     
     $log = Log::Log4perl->get_logger( __PACKAGE__ . '::' . $class );
@@ -57,11 +58,11 @@
     }
     
     # read config file
-    $log->debug( "Attempting to read config file '$self->{ file }'." );
+    $log->debug( "Attempting to read config file '$self->{ file }'..." );
     my $yaml = YAML::Tiny->new;
     $yaml = YAML::Tiny->read( $self->{ file } ) || $log->error_die("Config file not found!");
     
-    $log->debug( "Entering general section." );
+    $log->debug( "Loading general settings..." );
     
     # poll time
     $self->loadGeneralSetting( $yaml , 'poll-time' , 'poll' , '^\d+$' );
@@ -73,7 +74,7 @@
     $self->loadGeneralSetting( $yaml , 'target' , 'target' , '^(btc|ltc|doge)$' );
     
     # API keys
-    $log->debug( "Entering apikeys section." );
+    $log->debug( "Loading API keys..." );
     my $pairfound = 0;
     foreach my $exchange ( keys % { $yaml->[0]->{ apikeys } } )
     {
@@ -94,10 +95,10 @@
     $log->error_die("No API keys configured!") unless ( $pairfound );
     
     # Coin minimum sell amounts
-    $log->debug( "Entering coins section." );
-    foreach my $coin ( keys % { $yaml->[0]->{ coins } } )
+    $log->debug( "Checking for minimum sell amounts..." );
+    foreach my $coin ( keys % { $yaml->[0]->{ coinmins } } )
     {
-      my $min = $yaml->[0]->{ coins }->{ $coin } || undef;
+      my $min = $yaml->[0]->{ coinmins }->{ $coin } || undef;
       
       if ( defined $min )
       {
@@ -105,6 +106,14 @@
         $log->info( "Setting minimum $coinUC sell amount to $min $coinUC." );
         $self->{ coinmins }->{ $coin } = $min;
       }
+    }
+    
+    # excludes
+    $log->debug( "Checking for excluded coins..." );
+    for my $coin ( @ { $yaml->[0]->{ excludes } } )
+    {
+      push( @ { $self->{ excludes } } , lc( $coin ) );
+      $log->info( "Excluding " . uc( $coin ) . " from auto-sell." );
     }
   }
   

@@ -26,7 +26,17 @@
     # Format:
     # coin: amount
     ##########
-    coins:
-      ltc: 1            # require LTC balance >= 1 before trying to sell
+    coinmins:
+      sxc: 1            # require SXC balance >= 1 before trying to sell
+      dgc: 1            # require DGC balance >= 1 before trying to sell
+      fst: 1            # require FST balance >= 1 before trying to sell
       lot: 100          # require LOT balance >= 100 before trying to sell
-      
+    
+    ##########
+    # Coins to exclude from our auto-selling (OPTIONAL)
+    #
+    # Format: 1 coin per line
+    # - coin
+    ##########
+    excludes:
+      - ltc             # Do not autosell LTC
