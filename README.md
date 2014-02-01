@@ -3,9 +3,9 @@ altcoin-autosell
 
 Cryptocurrency/altcoin autoseller script written in Perl
 
-Requires modules JSON, Log::Log4perl, LWP::UserAgent, and YAML::Tiny.
+Requires modules Digest::SHA, HTTP::Request, JSON, Log::Log4perl, LWP::Protocol::https, LWP::UserAgent, Try::Tiny, and YAML::Tiny.
 ```shell
-cpan JSON Log::Log4perl LWP::UserAgent YAML::Tiny
+cpan Digest::SHA HTTP::Request JSON Log::Log4perl LWP::Protocol::https LWP::UserAgent Try::Tiny YAML::Tiny
 ```
   
 USAGE:

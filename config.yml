@@ -4,7 +4,7 @@
     general:
       poll-time: 300    # Amount of time between polls
       request-delay: 15 # Delay when we are going to send a request
-      target: btc       # Target currency(btc/ltc/doge)
+      target: BTC       # Target currency(btc/ltc/doge)
     
     ##########
     # Any number of API keys for us to monitor/use
@@ -27,10 +27,10 @@
     # coin: amount
     ##########
     coinmins:
-      sxc: 1            # require SXC balance >= 1 before trying to sell
-      dgc: 1            # require DGC balance >= 1 before trying to sell
-      fst: 1            # require FST balance >= 1 before trying to sell
-      lot: 100          # require LOT balance >= 100 before trying to sell
+      SXC: 1            # require SXC balance >= 1 before trying to sell
+      DGC: 1            # require DGC balance >= 1 before trying to sell
+      FST: 1            # require FST balance >= 1 before trying to sell
+      LOT: 100          # require LOT balance >= 100 before trying to sell
     
     ##########
     # Coins to exclude from our auto-selling (OPTIONAL)
@@ -39,4 +39,4 @@
     # - coin
     ##########
     excludes:
-      - ltc             # Do not autosell LTC
+      - LTC             # Do not autosell LTC

@@ -1,14 +1,15 @@
 #!/usr/bin/perl
 
+use Data::Dumper;
+use Getopt::Long; # command-line options
 use warnings;
 use strict;
 
-use JSON qw ( decode_json ); # JSON decode  
+# dependencies
 require Log::Log4perl; # logging
-require LWP::UserAgent; # for requests
-use Getopt::Long; # command-line options
 
 # our modules
+use Autosell::API::CoinEx; # CoinEx API
 use Autosell::Config qw( load ); # our config loader
 
 my $config = undef;
@@ -25,6 +26,30 @@ GetOptions( "usage|help|h|u"               => \&usage ,
 # init and load config
 $config = Autosell::Config->new( $configFile );
 $config->load();
+
+# load exchanges
+my $exchanges = [];
+for my $exchange ( keys % { $config->{ apikeys } } )
+{
+	# decide what exchange we have a pair for
+	if ( lc( $exchange ) eq 'coinex' )
+	{
+		push(@$exchanges, Autosell::API::CoinEx->new(
+		  $exchange , $config->{ $exchange }->{ key } , $config->{ $exchange }->{ secret } , $config ) );
+		
+		$log->info( "Monitoring $exchange." );
+	}
+	else
+	{
+		$log->error( "Unsupported exchange: $exchange" );
+	}
+}
+
+# error check, shouldn't ever happen as config checks for this
+$log->error_die( "No exchanges configured!" ) unless ( @$exchanges );
+
+# attempt to grab currencies from first exchange
+print Dumper $exchanges->[0]->currencies( @ { $config->{ excludes } } );
 
 ####################################################################################################
 # usage

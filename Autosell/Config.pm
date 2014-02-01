@@ -1,11 +1,10 @@
-#!/usr/bin/perl
-
 package Autosell::Config;
 
 use warnings;
 use strict;
 use Exporter;
 
+# depencencies
 use YAML::Tiny qw( LoadFile ); # parse yaml
 
 # exporting
@@ -13,7 +12,7 @@ our @ISA = qw( Exporter );
 our @EXPORT_OK = qw( load ); # explicit export
 
 # logger
-my $log = undef;
+my $log;
 
 ####################################################################################################
 # Initialize config
@@ -32,13 +31,13 @@ sub new
         log        => $log, # logger
         poll       => 300, # seconds between polls(default 5 mins)
         request    => 15, # request delay in seconds
-        target     => 'btc', # target/cashout currency
+        target     => 'BTC', # target/cashout currency
         apikeys    => {}, # hash of exchange to API key/secret pair
         coinmins   => {}, # min sell amounts for coins(optional, coin => amount)
         excludes   => [] # array of coins to exclude from autosell
     };
-  
-    $log = Log::Log4perl->get_logger( __PACKAGE__ . '::' . $class );
+    
+    $log = Log::Log4perl->get_logger( __PACKAGE__ );
     bless ( $self , $class );
     return $self;
 }
@@ -65,13 +64,13 @@ sub load
     $log->debug( "Loading general settings..." );
     
     # poll time
-    $self->loadGeneralSetting( $yaml , 'poll-time' , 'poll' , '^\d+$' );
+    $self->_loadGeneralSetting( $yaml , 'poll-time' , 'poll' , '^\d+$' );
     
     # request delay
-    $self->loadGeneralSetting( $yaml , 'request-delay' , 'request' , '^\d+$' );
+    $self->_loadGeneralSetting( $yaml , 'request-delay' , 'request' , '^\d+$' );
     
     # target currency
-    $self->loadGeneralSetting( $yaml , 'target' , 'target' , '^(btc|ltc|doge)$' );
+    $self->_loadGeneralSetting( $yaml , 'target' , 'target' , '^(btc|ltc|doge)$' );
     
     # API keys
     $log->debug( "Loading API keys..." );
@@ -102,8 +101,8 @@ sub load
         
         if ( defined $min )
         {
-            my $coinUC = uc $coin;
-            $log->info( "Setting minimum $coinUC sell amount to $min $coinUC." );
+            $coin = uc $coin;
+            $log->info( "Setting minimum $coin sell amount to $min $coin." );
             $self->{ coinmins }->{ $coin } = $min;
         }
     }
@@ -112,8 +111,9 @@ sub load
     $log->debug( "Checking for excluded coins..." );
     for my $coin ( @ { $yaml->[0]->{ excludes } } )
     {
-        push( @ { $self->{ excludes } } , lc( $coin ) );
-        $log->info( "Excluding " . uc( $coin ) . " from auto-sell." );
+    	$coin = uc $coin;
+        push( @ { $self->{ excludes } } , $coin );
+        $log->info( "Excluding $coin from auto-sell." );
     }
 }
 
@@ -127,7 +127,7 @@ sub load
 #  matches: Optional matching string
 #
 ####################################################################################################
-sub loadGeneralSetting
+sub _loadGeneralSetting
 {
     my $self = shift;
     my $yaml = shift;
