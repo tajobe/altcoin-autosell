@@ -51,11 +51,9 @@ $log->error_die( "No exchanges configured!" ) unless ( @$exchanges );
 
 # attempt to grab currencies from first exchange
 my $currencies = $exchanges->[0]->currencies( @ { $config->{ excludes } } );
-print Dumper $currencies;
 
 # attempt to grab markets from first exchange
 my $markets = $exchanges->[0]->markets( $config->{ target } , $currencies );
-print Dumper $markets;
 
 $log->debug( "Found " . keys( % { $currencies } ) . " relevant currencies and " . keys( % { $markets } ) . " markets for them." );
 
@@ -64,7 +62,7 @@ my $balances = $exchanges->[0]->balances( keys % { $currencies } );
 $log->info( "Balances:" );
 foreach my $currencyID ( keys % { $balances } )
 {
-    $log->info( "$currencies->{ $currencyID }($currencyID): $balances->{ $currencyID }" );
+    $log->info( sprintf( "%20s %s" , sprintf( "%.8f" , $balances->{ $currencyID } ) , $currencies->{ $currencyID } ) );
 }
 
 ####################################################################################################

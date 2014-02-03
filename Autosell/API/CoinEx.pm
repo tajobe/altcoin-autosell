@@ -2,11 +2,13 @@ package Autosell::API::CoinEx;
 
 use parent 'Autosell::API::Exchange';
 
+use Exporter;
+use POSIX qw( pow );
 use warnings;
 use strict;
-use Exporter;
 
 # dependencies
+use Digest::SHA qw( hmac_sha512_hex ); # HMAC-SHA512 signing
 use JSON qw( decode_json ); # JSON decode
 use Try::Tiny; # error handling
 
@@ -52,10 +54,42 @@ sub _init
     $self->{ ua }->default_header(
         'Content-type' => 'application/json',
         'Accept' => 'application/json',
-        'User-Agent' => 'altcoin-autoseller-perl',
-        'API-Key' => $self->{ key });
+        'User-Agent' => 'altcoin-autoseller-perl' );
     
     $log = Log::Log4perl->get_logger( __PACKAGE__ );
+}
+
+####################################################################################################
+# Retrieve non-zero balances of tracked currencies
+# 
+# Params:
+#  currencies: arrayref*(!) of currencies to look up(by ID)
+# 
+# Returns hash of currency ID => balance
+####################################################################################################
+sub balances
+{
+    my ( $self , $currencies ) = @_;
+    
+    # build hashref of currency ID => balance
+    $log->debug( "Querying $self->{ name } for balances..." );
+    try
+    {
+        my $balances = {};
+        my $response = $self->_request( 'balances' , 1 );
+        foreach my $currency ( @$response )
+        {
+            $balances->{ $currency->{ currency_id } } = $currency->{ amount } / pow( 10 , 8 ) # (balances are returned as ints(mult by 10^8))
+                if ( $currency->{ amount } > 0 );
+        }
+        
+        return $balances;
+    }
+    catch
+    {
+    	$log->error( "Error: $_" );
+    	$log->error_die( "Unable to get balances from $self->{ name }!" );
+    };
 }
 
 ####################################################################################################
@@ -79,7 +113,7 @@ sub currencies
     {
         my $currencies = {};
         my $response = $self->_request( 'currencies' );
-        for my $currency ( @$response )
+        foreach my $currency ( @$response )
         {
             $currencies->{ $currency->{ id } } = $currency->{ name }
                 unless ( exists $excludes{ uc( $currency->{ name } ) } ||
@@ -113,7 +147,8 @@ sub markets
     my $targetID = undef;
     foreach my $currency ( keys % { $currencies } )
     {
-        $targetID = $currency if ( uc( $currencies->{ $currency } ) eq uc( $target ));
+        $targetID = $currency
+            if ( uc( $currencies->{ $currency } ) eq uc( $target ));
     }
     
     # shouldn't happen
@@ -127,7 +162,8 @@ sub markets
         my $response = $self->_request( 'trade_pairs' );
         foreach my $market ( @$response )
         {
-            $markets->{ $market->{ currency_id } } = $market->{ id } if ( exists $currencies->{ $market->{ currency_id } } && $market->{ market_id } == $targetID );
+            $markets->{ $market->{ currency_id } } = $market->{ id }
+                if ( exists $currencies->{ $market->{ currency_id } } && $market->{ market_id } == $targetID );
         }
         
         return $markets;
@@ -143,7 +179,8 @@ sub markets
 # Send API request
 # 
 # Params:
-#  call: Method/API call
+#  call: Method/API call (http://URL/call)
+#  private: private(1) or public(0) call
 #  post: hashref of post data(optional)
 # 
 # Returns response
@@ -155,9 +192,15 @@ sub _request
     my $private = shift || 0;
     my $post = shift || undef;
     
-    # set sign header if private
-    my $sign =  $private ? hmac_sha512( $post , $self->{ secret } ) : '';
-    $self->{ ua }->default_header( 'API-Sign' => $sign ); # signed data
+    # set API keys/sign data if private, undef them if not
+    if ( $private )
+    {
+        $self->{ ua }->default_header( 'API-Key' => $self->{ key } , 'API-Sign' => hmac_sha512_hex( $post || '' , $self->{ secret } ) ); # signed data
+    }
+    else
+    {
+        $self->{ ua }->default_header( 'API-Key' => undef , 'API-Sign' => undef ); # not signed data
+    }
     
     # form request
     my $method = ( defined $post ) ? 'POST' : 'GET';

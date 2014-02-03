@@ -1,11 +1,10 @@
 package Autosell::API::Exchange;
 
+use Exporter;
 use warnings;
 use strict;
-use Exporter;
 
 # depencencies
-use Digest::SHA qw( hmac_sha512 ); # HMAC-SHA512 signing
 require HTTP::Request; # HTTP requests
 require LWP::UserAgent; # for requests
 
@@ -82,7 +81,8 @@ sub markets
 # Send API request
 # 
 # Params:
-#  call: Method/API call
+#  call: Method/API call (http://URL/call)
+#  private: private(1) or public(0) call
 #  post: hashref of post data
 # 
 ####################################################################################################

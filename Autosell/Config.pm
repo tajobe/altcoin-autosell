@@ -1,8 +1,8 @@
 package Autosell::Config;
 
+use Exporter;
 use warnings;
 use strict;
-use Exporter;
 
 # depencencies
 use YAML::Tiny qw( LoadFile ); # parse yaml
