@@ -152,21 +152,18 @@ sub _request
 {
     my $self = shift;
     my $call = shift;
+    my $private = shift || 0;
     my $post = shift || undef;
     
+    # set sign header if private
+    my $sign =  $private ? hmac_sha512( $post , $self->{ secret } ) : '';
+    $self->{ ua }->default_header( 'API-Sign' => $sign ); # signed data
+    
     # form request
+    my $method = ( defined $post ) ? 'POST' : 'GET';
     my $request = undef;
-    if ( defined $post )
-    {
-        my $post = encode_json $post
-        $self->{ ua }->default_header( 'API-Sign' => hmac_sha512( $post , $self->{ secret } )); # sign data
-        $request = HTTP::Request->new( 'POST' , $self->{ url } . $call , $self->{ ua }->default_headers , $post);
-    }
-    else
-    {
-        $self->{ ua }->default_header( 'API-Sign' => ''); # clear sign data
-        $request = HTTP::Request->new( 'GET' , $self->{ url } . $call , $self->{ ua }->default_headers );
-    }
+    $post = encode_json $post if ( defined $post );
+    $request = HTTP::Request->new( $method , $self->{ url } . $call , $self->{ ua }->default_headers , $post);
     
     # perform request and get response
     my $response = $self->{ ua }->request( $request );
