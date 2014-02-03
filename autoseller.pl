@@ -20,8 +20,9 @@ my $log = Log::Log4perl->get_logger( "autoseller" );
 $log->info;
 $log->info( "Autoseller started." );
 
-GetOptions( "usage|help|h|u"               => \&usage ,
-            "config|file|configfile|cfg:s" => \$configFile );
+GetOptions(
+                            "usage|help|h|u"                         => \&usage ,
+                            "config|file|configfile|cfg:s" => \$configFile );
 
 # init and load config
 $config = Autosell::Config->new( $configFile );
@@ -31,18 +32,18 @@ $config->load();
 my $exchanges = [];
 for my $exchange ( keys % { $config->{ apikeys } } )
 {
-	# decide what exchange we have a pair for
-	if ( lc( $exchange ) eq 'coinex' )
-	{
-		push(@$exchanges, Autosell::API::CoinEx->new(
-		  $exchange , $config->{ $exchange }->{ key } , $config->{ $exchange }->{ secret } ) );
-		
-		$log->info( "Monitoring $exchange." );
-	}
-	else
-	{
-		$log->error( "Unsupported exchange: $exchange" );
-	}
+    # decide what exchange we have a pair for
+    if ( lc( $exchange ) eq 'coinex' )
+    {
+        push(@$exchanges, Autosell::API::CoinEx->new(
+          $exchange , $config->{ apikeys }->{ $exchange }->{ key } , $config->{ apikeys }->{ $exchange }->{ secret } ) );
+        
+        $log->info( "Monitoring $exchange." );
+    }
+    else
+    {
+        $log->error( "Unsupported exchange: $exchange" );
+    }
 }
 
 # error check, shouldn't ever happen as config checks for this
@@ -57,6 +58,14 @@ my $markets = $exchanges->[0]->markets( $config->{ target } , $currencies );
 print Dumper $markets;
 
 $log->debug( "Found " . keys( % { $currencies } ) . " relevant currencies and " . keys( % { $markets } ) . " markets for them." );
+
+# check balances
+my $balances = $exchanges->[0]->balances( keys % { $currencies } );
+$log->info( "Balances:" );
+foreach my $currencyID ( keys % { $balances } )
+{
+    $log->info( "$currencies->{ $currencyID }($currencyID): $balances->{ $currencyID }" );
+}
 
 ####################################################################################################
 # usage
