@@ -1,7 +1,7 @@
 altcoin-autosell
 ================
 
-Cryptocurrency/altcoin autoseller script written in Perl, loosely pased on dtbartle/altcoin-autosell.
+Cryptocurrency/altcoin autoseller script written in Perl, loosely based on dtbartle/altcoin-autosell.
 
 Requires modules Digest::SHA, HTTP::Request, JSON, Log::Log4perl, LWP::Protocol::https, LWP::UserAgent, Try::Tiny, and YAML::Tiny.  
 Install using CPAN:
