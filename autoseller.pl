@@ -35,7 +35,7 @@ for my $exchange ( keys % { $config->{ apikeys } } )
 	if ( lc( $exchange ) eq 'coinex' )
 	{
 		push(@$exchanges, Autosell::API::CoinEx->new(
-		  $exchange , $config->{ $exchange }->{ key } , $config->{ $exchange }->{ secret } , $config ) );
+		  $exchange , $config->{ $exchange }->{ key } , $config->{ $exchange }->{ secret } ) );
 		
 		$log->info( "Monitoring $exchange." );
 	}
@@ -49,7 +49,14 @@ for my $exchange ( keys % { $config->{ apikeys } } )
 $log->error_die( "No exchanges configured!" ) unless ( @$exchanges );
 
 # attempt to grab currencies from first exchange
-print Dumper $exchanges->[0]->currencies( @ { $config->{ excludes } } );
+my $currencies = $exchanges->[0]->currencies( @ { $config->{ excludes } } );
+print Dumper $currencies;
+
+# attempt to grab markets from first exchange
+my $markets = $exchanges->[0]->markets( $config->{ target } , $currencies );
+print Dumper $markets;
+
+$log->debug( "Found " . keys( % { $currencies } ) . " relevant currencies and " . keys( % { $markets } ) . " markets for them." );
 
 ####################################################################################################
 # usage

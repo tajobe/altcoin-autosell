@@ -81,10 +81,10 @@ sub currencies
         my $response = $self->_request( 'currencies' );
         for my $currency ( @$response )
         {
-        	$currencies->{ $currency->{ id } } = $currency->{ name }
-        	   unless ( exists $excludes{ uc( $currency->{ name } ) } ||
-        	   $currency->{ name } eq 'SwitchPool-scrypt' || # why are these currencies?
-        	   $currency->{ name } eq 'SwitchPool-sha256' );
+            $currencies->{ $currency->{ id } } = $currency->{ name }
+                unless ( exists $excludes{ uc( $currency->{ name } ) } ||
+                    $currency->{ name } eq 'SwitchPool-scrypt' || # why are these currencies?
+                    $currency->{ name } eq 'SwitchPool-sha256' );
         }
         
         return $currencies;
@@ -93,6 +93,49 @@ sub currencies
     {
     	$log->error( "Error: $_" );
     	$log->error_die( "Unable to get currencies from $self->{ name }!" );
+    };
+}
+
+####################################################################################################
+# Get available markets for included coins to target currency
+# 
+# Params:
+#  target: target currency(name)
+#  currencies: hashref of coins(ID=>name) to fetch trade pairs for(by ID)
+# 
+# Returns hashref of currency ID => trade pair ID where market is for given target
+####################################################################################################
+sub markets
+{
+    my ( $self , $target , $currencies ) = @_;
+    
+    # find ID of target currency
+    my $targetID = undef;
+    foreach my $currency ( keys % { $currencies } )
+    {
+        $targetID = $currency if ( uc( $currencies->{ $currency } ) eq uc( $target ));
+    }
+    
+    # shouldn't happen
+    $log->error_die( "Could not find target currency '$target' in currencies!" ) unless ( $targetID );
+    
+    # build currency ID => market ID hash of markets
+    $log->debug( "Querying $self->{ name } for applicable markets..." );
+    try
+    {
+        my $markets = {};
+        my $response = $self->_request( 'trade_pairs' );
+        foreach my $market ( @$response )
+        {
+            $markets->{ $market->{ currency_id } } = $market->{ id } if ( exists $currencies->{ $market->{ currency_id } } && $market->{ market_id } == $targetID );
+        }
+        
+        return $markets;
+    }
+    catch
+    {
+    	$log->error( "Error: $_" );
+    	$log->error_die( "Unable to get markets from $self->{ name }!" );
     };
 }
 

@@ -68,10 +68,10 @@ sub currencies
 # Get available markets for included coins to target currency
 # 
 # Params:
-#  target: target currency
-#  excludes: array of coins to exclude(by name)
+#  target: target currency(name)
+#  currencies: hashref of coins(ID=>name) to fetch trade pairs for(by ID)
 # 
-# Returns hash of currency ID => market ID where market is for given target
+# Returns hashref of currency ID => trade pair  ID where market is for given target
 ####################################################################################################
 sub markets
 {

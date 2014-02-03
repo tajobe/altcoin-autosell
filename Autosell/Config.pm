@@ -70,7 +70,7 @@ sub load
     $self->_loadGeneralSetting( $yaml , 'request-delay' , 'request' , '^\d+$' );
     
     # target currency
-    $self->_loadGeneralSetting( $yaml , 'target' , 'target' , '^(btc|ltc|doge)$' );
+    $self->_loadGeneralSetting( $yaml , 'target' , 'target' , '^(BTC|LTC|DOGE)$' );
     
     # API keys
     $log->debug( "Loading API keys..." );
@@ -112,7 +112,10 @@ sub load
     for my $coin ( @ { $yaml->[0]->{ excludes } } )
     {
     	$coin = uc $coin;
-        push( @ { $self->{ excludes } } , $coin );
+    	
+    	# add exclude unless it's our target, we need that later and won't/can't trade it anyway(EG no such thing as a btc_btc market)
+        push( @ { $self->{ excludes } } , $coin ) unless ( $coin eq $self->{ target } );
+        
         $log->info( "Excluding $coin from auto-sell." );
     }
 }
@@ -135,22 +138,22 @@ sub _loadGeneralSetting
     my $setting = shift;
     my $matches = shift || '';
     
-    my $value = lc( $yaml->[0]->{ general }->{ $config } ) || undef;
+    my $value = uc( $yaml->[0]->{ general }->{ $config } ) || undef;
     if ( defined $value )
     {
         if ( $value =~ /$matches/ )
         {
             $self->{ $setting } = $value;
-            $log->info( "Setting $config to " . uc( $value ) . "." );
+            $log->info( "Setting $config to $value." );
         }
         else
         {
-            $log->warn( "Unsupported ${config} value(${value})! Using default of " . uc( $self->{ $setting } ) . "." );
+            $log->warn( "Unsupported ${config} value(${value})! Using default of $self->{ $setting }." );
         }
     }
     else
     {
-        $log->warn( "Missing $config option! Using default of " . uc( $self->{ $setting } ) . "." );
+        $log->warn( "Missing $config option! Using default of $self->{ $setting }." );
     }
 }
 
