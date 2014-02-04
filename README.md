@@ -8,7 +8,11 @@ Install using CPAN:
 ```shell
 cpan Digest::SHA HTTP::Request JSON Log::Log4perl LWP::Protocol::https LWP::UserAgent Try::Tiny YAML::Tiny
 ```
-  
+
+Edit configuration in config.yml, or create one and pass it on the command line with the -config option.
+
+Log configuration(for debugging) in log.conf.
+
 USAGE:
 ```shell
 ./autoseller.pl -usage

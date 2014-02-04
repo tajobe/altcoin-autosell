@@ -21,3 +21,4 @@ pm_to_blib
 # ignore project files
 .project
 .includepath
+altcoin-autosell.geany
