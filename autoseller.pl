@@ -103,6 +103,10 @@ while ( 1 )
                     $exchange->{ 'currencies' }->{ $currencyID } ) );
                 
                 # TODO sell
+                
+                # request delay
+                $log->trace( "Sleeping for $config->{ request }s.");
+                sleep $config->{ request };
             }
             else
             {
@@ -112,10 +116,10 @@ while ( 1 )
             }
         }
     }
-
+    
     # sleep until it's time for next poll
     $log->trace( "Sleeping for $config->{ poll }s.");
-    sleep $config->{ 'poll' };
+    sleep $config->{ poll };
 }
 
 ####################################################################################################

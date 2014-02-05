@@ -26,9 +26,9 @@ my $log;
 ####################################################################################################
 sub _init
 {
-	my $self = shift;
-	
-	$self->{ name } = shift; # exchange name
+    my $self = shift;
+    
+    $self->{ name } = shift; # exchange name
     $self->{ key } = shift; # API key
     $self->{ secret } = shift; # API secret
     $self->{ ua } = LWP::UserAgent->new; # user agent
@@ -47,7 +47,7 @@ sub _init
 ####################################################################################################
 sub balances
 {
-	die "Not implemented."
+    die "Not implemented."
 }
 
 ####################################################################################################
@@ -74,7 +74,7 @@ sub currencies
 ####################################################################################################
 sub markets
 {
-	die "Not implemented.";
+    die "Not implemented.";
 }
 
 ####################################################################################################
@@ -82,13 +82,14 @@ sub markets
 # 
 # Params:
 #  call: Method/API call (http://URL/call)
+#  method: http method(GET or POST)
 #  private: private(1) or public(0) call
 #  post: hashref of post data
 # 
 ####################################################################################################
 sub _request
 {
-	die "Not implemented!";
+    die "Not implemented!";
 }
 
 1;

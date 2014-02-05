@@ -27,14 +27,15 @@ sub new
     my $class = shift;
     my $self =
     {
-        file       => shift || 'config.yml', # config filename;
-        log        => $log, # logger
-        poll       => 300, # seconds between polls(default 5 mins)
-        request    => 15, # request delay in seconds
-        target     => 'BTC', # target/cashout currency
-        apikeys    => {}, # hash of exchange to API key/secret pair
-        coinmins   => {}, # min sell amounts for coins(optional, coin => amount)
-        excludes   => [] # array of coins to exclude from autosell
+        file        => shift || 'config.yml', # config filename;
+        log         => $log, # logger
+        poll        => 300, # seconds between polls(default 5 mins)
+        request     => 5, # request delay in seconds
+        strategy    => 'match-buy', # sell strategy
+        target      => 'BTC', # target/cashout currency
+        apikeys     => {}, # hash of exchange to API key/secret pair
+        coinmins    => {}, # min sell amounts for coins(optional, coin => amount)
+        excludes    => [] # array of coins to exclude from autosell
     };
     
     $log = Log::Log4perl->get_logger( __PACKAGE__ );
@@ -68,6 +69,10 @@ sub load
     
     # request delay
     $self->_loadGeneralSetting( $yaml , 'request-delay' , 'request' , '^\d+$' );
+    
+    # sell strategy
+    $self->_loadGeneralSetting(
+        $yaml , 'strategy' , 'strategy' , '^(match-buy|match-sell|undercut)$' );
     
     # target currency
     $self->_loadGeneralSetting( $yaml , 'target' , 'target' , '^(BTC|LTC|DOGE)$' );
@@ -111,9 +116,10 @@ sub load
     $log->debug( "Checking for excluded coins..." );
     for my $coin ( @ { $yaml->[0]->{ excludes } } )
     {
-    	$coin = uc $coin;
-    	
-    	# add exclude unless it's our target, we need that later and won't/can't trade it anyway(EG no such thing as a btc_btc market)
+        $coin = uc $coin;
+        
+        # add exclude unless it's our target.
+        # we need that later and won't/can't trade it anyway(EG no such thing as a btc_btc market)
         push( @ { $self->{ excludes } } , $coin ) unless ( $coin eq $self->{ target } );
         
         $log->info( "Excluding $coin from auto-sell." );
@@ -141,14 +147,15 @@ sub _loadGeneralSetting
     my $value = uc( $yaml->[0]->{ general }->{ $config } ) || undef;
     if ( defined $value )
     {
-        if ( $value =~ /$matches/ )
+        if ( $value =~ /$matches/i )
         {
             $self->{ $setting } = $value;
             $log->info( "Setting $config to $value." );
         }
         else
         {
-            $log->warn( "Unsupported ${config} value(${value})! Using default of $self->{ $setting }." );
+            $log->warn(
+                "Unsupported ${config} value(${value})! Using default of $self->{ $setting }." );
         }
     }
     else

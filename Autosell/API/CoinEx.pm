@@ -9,7 +9,7 @@ use strict;
 
 # dependencies
 use Digest::SHA qw( hmac_sha512_hex ); # HMAC-SHA512 signing
-use JSON qw( decode_json ); # JSON decode
+use JSON qw( encode_json decode_json ); # JSON encode/decode
 use Try::Tiny; # error handling
 
 # logger
@@ -76,7 +76,7 @@ sub balances
     try
     {
         my $balances = {};
-        my $response = $self->_request( 'balances' , 1 );
+        my $response = $self->_request( 'balances' , 'GET' , 1 );
         foreach my $currency ( @$response )
         {
             $balances->{ $currency->{ currency_id } } = $currency->{ amount } / pow( 10 , 8 ) # (balances are returned as ints(mult by 10^8))
@@ -87,8 +87,8 @@ sub balances
     }
     catch
     {
-    	$log->error( "Error: $_" );
-    	$log->error_die( "Unable to get balances from $self->{ name }!" );
+        $log->error( "Error: $_" );
+        $log->error_die( "Unable to get balances from $self->{ name }!" );
     };
 }
 
@@ -125,8 +125,8 @@ sub currencies
     }
     catch
     {
-    	$log->error( "Error: $_" );
-    	$log->error_die( "Unable to get currencies from $self->{ name }!" );
+        $log->error( "Error: $_" );
+        $log->error_die( "Unable to get currencies from $self->{ name }!" );
     };
 }
 
@@ -170,8 +170,8 @@ sub markets
     }
     catch
     {
-    	$log->error( "Error: $_" );
-    	$log->error_die( "Unable to get markets from $self->{ name }!" );
+        $log->error( "Error: $_" );
+        $log->error_die( "Unable to get markets from $self->{ name }!" );
     };
 }
 
@@ -180,6 +180,7 @@ sub markets
 # 
 # Params:
 #  call: Method/API call (http://URL/call)
+#  method: http method(GET or POST)
 #  private: private(1) or public(0) call
 #  post: hashref of post data(optional)
 # 
@@ -189,23 +190,25 @@ sub _request
 {
     my $self = shift;
     my $call = shift;
+    my $method = shift || 'GET';
     my $private = shift || 0;
     my $post = shift || undef;
+    
+    # encode post data
+    my $request = undef;
+    $post = ( defined $post ) ? encode_json $post : '';
     
     # set API keys/sign data if private, undef them if not
     if ( $private )
     {
-        $self->{ ua }->default_header( 'API-Key' => $self->{ key } , 'API-Sign' => hmac_sha512_hex( $post || '' , $self->{ secret } ) ); # signed data
+        $self->{ ua }->default_header( 'API-Key' => $self->{ key } , 'API-Sign' => hmac_sha512_hex( $post , $self->{ secret } ) ); # signed data
     }
     else
     {
         $self->{ ua }->default_header( 'API-Key' => undef , 'API-Sign' => undef ); # not signed data
     }
-    
+
     # form request
-    my $method = ( defined $post ) ? 'POST' : 'GET';
-    my $request = undef;
-    $post = encode_json $post if ( defined $post );
     $request = HTTP::Request->new( $method , $self->{ url } . $call , $self->{ ua }->default_headers , $post);
     
     # perform request and get response
@@ -214,22 +217,22 @@ sub _request
     # success
     if ( $response->is_success )
     {
-    	my $json = decode_json( $response->decoded_content );
-    	
-    	# ensure we got data we care about
-    	unless ( $json->{ $call } )
-    	{
+        my $json = decode_json( $response->decoded_content );
+        
+        # ensure we got data we care about
+        unless ( $json->{ $call } )
+        {
             $log->error( "$self->{ name } error on request: '$self->{ url }$call'." );
             $log->error( "Invalid response! Bad data." );
-    		die "Invalid response! Bad data.";
-    	}
-    	return $json->{ $call }
+            die "Invalid response! Bad data.";
+        }
+        return $json->{ $call }
     }
     else
     {
-    	$log->error( "$self->{ name } error on request: '$self->{ url }$call'." );
-    	$log->error( $response->error_as_HTML );
-    	die "Request error!"; # error out
+        $log->error( "$self->{ name } error on request: '$self->{ url }$call'." );
+        $log->error( $response->error_as_HTML );
+        die "Request error!"; # error out
     }
 }
 

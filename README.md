@@ -27,43 +27,59 @@ Example config(included):
     # General settings
     ##########
     general:
-      poll-time: 300    # Amount of time between polls
-      request-delay: 15 # Delay when we are going to send a request
-      target: BTC       # Target currency(btc/ltc/doge)
+        # Amount of time between polls
+        poll-time: 300
+        # Delay when we are going to send a request
+        request-delay: 5
+        # strategy to use to sell coins
+        #   match-buy: Match highest buy offer(quick sell, least money)
+        #   match-sell: Match lowest sell offer(takes longer, most money)
+        #   undercut: Undercuts lowest sell by 1(0.00000001)
+        strategy: match-buy
+        # Target currency(btc/ltc/doge)
+        target: BTC
     
     ##########
     # Any number of API keys for us to monitor/use
     # 
     # Format:
-    # exchange: (coinex)
-    #   key: 'API key'
-    #   secret: 'API secret'
+    #   exchange: (coinex)
+    #       key: 'API key'
+    #       secret: 'API secret'
     ##########
     apikeys:
-      coinex:           # exchange the keys are for(determines what API we need to use)
-        key: ''         # API key
-        secret: ''      # API secret
+        # exchange the keys are for(determines what API we need to use)
+        coinex:
+            # API key
+            key: ''
+            # API secret
+            secret: ''
     
     ##########
     # Min sell amounts for any number of coins (OPTIONAL)
     # Will not try to make orders when balance is below set amount
     # 
     # Format:
-    # coin: amount
+    #   coin: amount
     ##########
     coinmins:
-      SXC: 1            # require SXC balance >= 1 before trying to sell
-      DGC: 1            # require DGC balance >= 1 before trying to sell
-      FST: 1            # require FST balance >= 1 before trying to sell
-      LOT: 100          # require LOT balance >= 100 before trying to sell
+        # require SXC balance >= 1 before trying to sell
+        SXC: 1
+        # require DGC balance >= 1 before trying to sell
+        DGC: 1
+        # require FST balance >= 1 before trying to sell
+        FST: 1
+        # require LOT balance >= 1000 before trying to sell
+        LOT: 100
     
     ##########
     # Coins to exclude from our auto-selling (OPTIONAL)
     #
     # Format: 1 coin per line
-    # - coin
+    #   - coin
     ##########
     excludes:
-      - LTC             # Do not autosell LTC
+        # Do not autosell LTC
+        - LTC
 ```
 NOTE: coinmins and excludes sections are optional.
