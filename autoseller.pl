@@ -37,13 +37,13 @@ for my $exchange ( keys % { $config->{ apikeys } } )
 {
     $log->debug( "Loading $exchange..." );
 
-    my $exchangeref = { 'name' => $exchange };
+    my $exchangeref = { name => $exchange };
     
     # decide what exchange we have
     if ( lc( $exchange ) eq 'coinex' )
     {
         # load exchange
-        $exchangeref->{ 'exchange' } =
+        $exchangeref->{ exchange } =
             Autosell::API::CoinEx->new(
                 $exchange ,
                 $config->{ apikeys }->{ $exchange }->{ key } ,
@@ -56,18 +56,18 @@ for my $exchange ( keys % { $config->{ apikeys } } )
     }
     
     # attempt to grab currencies from exchange
-    $exchangeref->{ 'currencies' } =
-        $exchangeref->{ 'exchange' }->currencies( @ { $config->{ excludes } } );
+    $exchangeref->{ currencies } =
+        $exchangeref->{ exchange }->currencies( @ { $config->{ excludes } } );
             
     # attempt to grab markets exchange
-    $exchangeref->{ 'markets' } =
-        $exchangeref->{ 'exchange' }->markets(
-            $config->{ target } , $exchangeref->{ 'currencies' } );
+    $exchangeref->{ markets } =
+        $exchangeref->{ exchange }->markets(
+            $config->{ target } , $exchangeref->{ currencies } );
 
     # log what we've found
-    $log->debug( "Found " . keys( % { $exchangeref->{ 'currencies' } } ) .
+    $log->debug( "Found " . keys( % { $exchangeref->{ currencies } } ) .
         " relevant currencies and " .
-        keys( % { $exchangeref->{ 'markets' } } ) . " markets for them." );
+        keys( % { $exchangeref->{ markets } } ) . " markets for them." );
     
     push(@$exchanges, $exchangeref );
     
@@ -83,26 +83,31 @@ while ( 1 )
     foreach my $exchange ( @$exchanges )
     {
         $log->trace( "Querying balances on $exchange->{ name }..." );
-        my $balances = $exchange->{ 'exchange' }->balances(
-            keys % { $exchange->{ 'currencies' } } );
+        my $balances = $exchange->{ exchange }->balances(
+            keys % { $exchange->{ currencies } } );
 
         # try to trade balances
         foreach my $currencyID ( keys % { $balances } )
         {
-            if ($exchange->{ 'currencies' }->{ $currencyID } eq $config->{ target } )
+            if ($exchange->{ currencies }->{ $currencyID } eq $config->{ target } )
             {
                 $log->trace(sprintf( "Ignoring target currency. Bal: %15s %s" ,
                     sprintf( "%.8f" , $balances->{ $currencyID } ) ,
-                    $exchange->{ 'currencies' }->{ $currencyID } ) );
+                    $exchange->{ currencies }->{ $currencyID } ) );
             }
             elsif ( $balances->{ $currencyID } >=
-                ( $config->{ coinmins }->{ $exchange->{ 'currencies' }->{ $currencyID } } || 0 ) )
+                ( $config->{ coinmins }->{ $exchange->{ currencies }->{ $currencyID } } || 0 ) )
             {
                 $log->trace( sprintf( "Attempting to sell %15s %s" ,
                     sprintf( "%.8f" , $balances->{ $currencyID } ) ,
-                    $exchange->{ 'currencies' }->{ $currencyID } ) );
+                    $exchange->{ currencies }->{ $currencyID } ) );
                 
                 # TODO sell
+                my $price = $exchange->{ exchange }->getPrice(
+                    $exchange->{ markets }->{ $currencyID } ,
+                    $config->{ strategy } );
+
+                $log->trace( "Price of $price found." );
                 
                 # request delay
                 $log->trace( "Sleeping for $config->{ request }s.");
@@ -112,7 +117,7 @@ while ( 1 )
             {
                 $log->trace( sprintf( "Ignoring balance of %20s %s, below min amount." ,
                     sprintf( "%.8f" , $balances->{ $currencyID } ) ,
-                    $exchange->{ 'currencies' }->{ $currencyID } ) );
+                    $exchange->{ currencies }->{ $currencyID } ) );
             }
         }
     }

@@ -34,7 +34,7 @@ Example config(included):
         # strategy to use to sell coins
         #   match-buy: Match highest buy offer(quick sell, least money)
         #   match-sell: Match lowest sell offer(takes longer, most money)
-        #   undercut: Undercuts lowest sell by 1(0.00000001)
+        #   undercut-sell: Undercuts lowest sell by max between int(5%), 1 Satoshi
         strategy: match-buy
         # Target currency(btc/ltc/doge)
         target: BTC

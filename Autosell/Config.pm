@@ -18,7 +18,7 @@ my $log;
 # Initialize config
 # 
 # Params:
-#  file: Name+path of config file
+#   file: Name+path of config file
 #
 # Returns self
 ####################################################################################################
@@ -72,7 +72,7 @@ sub load
     
     # sell strategy
     $self->_loadGeneralSetting(
-        $yaml , 'strategy' , 'strategy' , '^(match-buy|match-sell|undercut)$' );
+        $yaml , 'strategy' , 'strategy' , '^(match-buy|match-sell|undercut-sell)$' );
     
     # target currency
     $self->_loadGeneralSetting( $yaml , 'target' , 'target' , '^(BTC|LTC|DOGE)$' );
@@ -130,10 +130,10 @@ sub load
 # Load setting from the general section
 # 
 # Params:
-#  yaml: YAML::Tiny object for reading config
-#  config: key of setting to load from config
-#  setting: Which setting to populate with what's loaded from config
-#  matches: Optional matching string
+#   yaml: YAML::Tiny object for reading config
+#   config: key of setting to load from config
+#   setting: Which setting to populate with what's loaded from config
+#   matches: Optional matching string
 #
 ####################################################################################################
 sub _loadGeneralSetting

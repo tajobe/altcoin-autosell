@@ -3,9 +3,11 @@ package Autosell::API::CoinEx;
 use parent 'Autosell::API::Exchange';
 
 use Exporter;
+use List::Util qw( max );
 use POSIX qw( pow );
 use warnings;
 use strict;
+use Switch;
 
 # dependencies
 use Digest::SHA qw( hmac_sha512_hex ); # HMAC-SHA512 signing
@@ -19,9 +21,9 @@ my $log;
 # Initialize Exchange
 # 
 # Params:
-#  name: name of exchange
-#  key: API key for exchange
-#  secret: API secret
+#   name: name of exchange
+#   key: API key for exchange
+#   secret: API secret
 #
 # Returns self
 ####################################################################################################
@@ -38,9 +40,9 @@ sub new
 # Initialize Exchange
 # 
 # Params:
-#  name: name of exchange
-#  key: API key for exchange
-#  secret: API secret
+#   name: name of exchange
+#   key: API key for exchange
+#   secret: API secret
 #
 ####################################################################################################
 sub _init
@@ -63,7 +65,7 @@ sub _init
 # Retrieve non-zero balances of tracked currencies
 # 
 # Params:
-#  currencies: arrayref*(!) of currencies to look up(by ID)
+#   currencies: arrayref*(!) of currencies to look up(by ID)
 # 
 # Returns hash of currency ID => balance
 ####################################################################################################
@@ -96,7 +98,7 @@ sub balances
 # Get all available currencies on exchange
 # 
 # Params:
-#  excludes: array of coins to exclude(by name)
+#   excludes: array of coins to exclude(by name)
 # 
 # Returns hashref of currency ID => name
 ####################################################################################################
@@ -134,8 +136,8 @@ sub currencies
 # Get available markets for included coins to target currency
 # 
 # Params:
-#  target: target currency(name)
-#  currencies: hashref of coins(ID=>name) to fetch trade pairs for(by ID)
+#   target: target currency(name)
+#   currencies: hashref of coins(ID=>name) to fetch trade pairs for(by ID)
 # 
 # Returns hashref of currency ID => trade pair ID where market is for given target
 ####################################################################################################
@@ -176,13 +178,97 @@ sub markets
 }
 
 ####################################################################################################
+# Get price based on a price strategy
+#
+# Params:
+#   market: trade pair ID
+#   strategy: price strategy(match-buy, match-sell, undercut-sell)
+#
+# Returns market price from given strategy
+####################################################################################################
+sub getPrice
+{
+    my ( $self , $market , $strategy ) = @_;
+
+    $log->trace(
+        "Calculating price of trade pair ID $market on $self->{ name } for $strategy strategy..." );
+    try
+    {
+        my $trades = $self->_request( 'orders?tradePair=' . $market );
+        my $price = 0;
+
+        # find appropriate price based on strategy
+        foreach my $trade ( @$trades )
+        {
+            # ignore completed or cancelled trades
+            if ( ! ( $trade->{ complete } || $trade->{ cancelled } ) )
+            {
+                switch ( $strategy )
+                {
+                    # match highest buy price
+                    case 'MATCH-BUY'
+                    {
+                        $price = $trade->{ rate }
+                            if ( $trade->{ bid } && $price < $trade->{ rate } );
+                    }
+                    # match or undercut lowest sell price
+                    case /^(MATCH-SELL|UNDERCUT-SELL)$/i
+                    {
+                        $price = $trade->{ rate }
+                            if ( ! $trade->{ bid } &&
+                                ($price > $trade->{ rate } || $price == 0));
+                    }
+                    else
+                    {
+                        $log->error( "Unknown price strategy '$strategy'!" );
+                    }
+                }
+            }
+        }
+
+        # ensure we got a price
+        if ( $price == 0 )
+        {
+            die "No price found using strategy '$strategy'!";
+        }
+
+        # apply undercut if needed
+        if ( $strategy =~ /^(UNDERCUT-SELL)$/i )
+        {
+            $price = $price - max( 1 , int( $price * 0.05 ) );
+        }
+
+        $log->trace( "$strategy strategy yielded price $price." );
+        
+        return $price;
+    }
+    catch
+    {
+        $log->error( "Error: $_" );
+        $log->error_die( "Unable to get prices from $self->{ name }!" );
+    };
+}
+
+####################################################################################################
+# Submit a sell order
+#
+# Params:
+#   market: trade pair ID
+#   amount: amount of currency to sell
+#   strategy: sell strategy(match-buy, match-sell, undercut-sell)
+####################################################################################################
+sub sellOrder
+{
+}
+
+####################################################################################################
 # Send API request
 # 
 # Params:
-#  call: Method/API call (http://URL/call)
-#  method: http method(GET or POST)
-#  private: private(1) or public(0) call
-#  post: hashref of post data(optional)
+#   call: Method/API call relative to API URL(http://URL/call)
+#   method: http method(GET or POST)
+#   private: private(1) or public(0) call
+#   post: hashref of post data(optional)
 # 
 # Returns response
 ####################################################################################################
@@ -218,15 +304,16 @@ sub _request
     if ( $response->is_success )
     {
         my $json = decode_json( $response->decoded_content );
+        my $root = (split( /[\/?]/ , $call ))[0];
         
         # ensure we got data we care about
-        unless ( $json->{ $call } )
+        unless ( $json->{ $root } )
         {
             $log->error( "$self->{ name } error on request: '$self->{ url }$call'." );
             $log->error( "Invalid response! Bad data." );
             die "Invalid response! Bad data.";
         }
-        return $json->{ $call }
+        return $json->{ $root }
     }
     else
     {
