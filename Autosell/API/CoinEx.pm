@@ -4,7 +4,6 @@ use parent 'Autosell::API::Exchange';
 
 use Exporter;
 use List::Util qw( max );
-use POSIX qw( pow );
 use warnings;
 use strict;
 use Switch;
@@ -81,7 +80,7 @@ sub balances
         my $response = $self->_request( 'balances' , 'GET' , 1 );
         foreach my $currency ( @$response )
         {
-            $balances->{ $currency->{ currency_id } } = $currency->{ amount } / pow( 10 , 8 ) # (balances are returned as ints(mult by 10^8))
+            $balances->{ $currency->{ currency_id } } = $currency->{ amount }
                 if ( $currency->{ amount } > 0 );
         }
         
@@ -256,9 +255,38 @@ sub getPrice
 #   market: trade pair ID
 #   amount: amount of currency to sell
 #   strategy: sell strategy(match-buy, match-sell, undercut-sell)
+#
+# Returns hashref of order
 ####################################################################################################
 sub sellOrder
 {
+    my ( $self , $market , $amount , $strategy ) = @_;
+
+    # get price
+    my $price = $self->getPrice( $market , $strategy );
+
+    # form order
+    my $order =
+    {
+        'trade_pair_id' => $market ,
+        'amount' => $amount,
+        'bid' => 0, # sell order
+        'rate' => $price
+    };
+    
+    # attempt to create order
+    $log->trace(
+        "Creating sell order for $amount coins in market $market on $self->{ name } for $price each..." );
+    try
+    {
+        return ( $self->_request(
+            'orders' , 'POST' , 1 , encode_json( { 'order' => $order } ) ) )->[0];
+    }
+    catch
+    {
+        $log->error( "Error: $_" );
+        $log->error_die( "Unable to create order on $self->{ name }!" );
+    };
 }
 
 ####################################################################################################
@@ -268,9 +296,9 @@ sub sellOrder
 #   call: Method/API call relative to API URL(http://URL/call)
 #   method: http method(GET or POST)
 #   private: private(1) or public(0) call
-#   post: hashref of post data(optional)
+#   post: JSON encoded POST data(optional)
 # 
-# Returns response
+# Returns JSON response(arrayref)
 ####################################################################################################
 sub _request
 {
@@ -278,11 +306,7 @@ sub _request
     my $call = shift;
     my $method = shift || 'GET';
     my $private = shift || 0;
-    my $post = shift || undef;
-    
-    # encode post data
-    my $request = undef;
-    $post = ( defined $post ) ? encode_json $post : '';
+    my $post = shift || '';
     
     # set API keys/sign data if private, undef them if not
     if ( $private )
@@ -295,7 +319,8 @@ sub _request
     }
 
     # form request
-    $request = HTTP::Request->new( $method , $self->{ url } . $call , $self->{ ua }->default_headers , $post);
+    my $URL = $self->{ url } . $call;
+    my $request = HTTP::Request->new( $method , $URL , $self->{ ua }->default_headers , $post);
     
     # perform request and get response
     my $response = $self->{ ua }->request( $request );
@@ -304,12 +329,14 @@ sub _request
     if ( $response->is_success )
     {
         my $json = decode_json( $response->decoded_content );
+
+        # root of JSON response is always word immediately following base API URL
         my $root = (split( /[\/?]/ , $call ))[0];
         
         # ensure we got data we care about
         unless ( $json->{ $root } )
         {
-            $log->error( "$self->{ name } error on request: '$self->{ url }$call'." );
+            $log->error( "$self->{ name } error on request: '$URL." );
             $log->error( "Invalid response! Bad data." );
             die "Invalid response! Bad data.";
         }
@@ -317,7 +344,7 @@ sub _request
     }
     else
     {
-        $log->error( "$self->{ name } error on request: '$self->{ url }$call'." );
+        $log->error( "$self->{ name } error on request: '$URL'." );
         $log->error( $response->error_as_HTML );
         die "Request error!"; # error out
     }

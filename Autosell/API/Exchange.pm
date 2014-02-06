@@ -98,6 +98,8 @@ sub getPrice
 #   market: trade pair ID
 #   amount: amount of currency to sell
 #   strategy: sell strategy(match-buy, match-sell, undercut-sell)
+#
+# Returns hashref of order
 ####################################################################################################
 sub sellOrder
 {
@@ -111,8 +113,9 @@ sub sellOrder
 #   call: Method/API call relative to API URL(http://URL/call)
 #   method: http method(GET or POST)
 #   private: private(1) or public(0) call
-#   post: hashref of post data
+#   post: JSON encoded POST data(optional)
 # 
+# Returns JSON response
 ####################################################################################################
 sub _request
 {

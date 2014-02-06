@@ -1,12 +1,13 @@
 #!/usr/bin/perl
 
-use Data::Dumper;
 use Getopt::Long; # command-line options
+use POSIX qw( pow );
 use warnings;
 use strict;
 
 # dependencies
 require Log::Log4perl; # logging
+use Try::Tiny; # error handling
 
 # our modules
 use Autosell::API::CoinEx; # CoinEx API
@@ -89,25 +90,49 @@ while ( 1 )
         # try to trade balances
         foreach my $currencyID ( keys % { $balances } )
         {
-            if ($exchange->{ currencies }->{ $currencyID } eq $config->{ target } )
+            # adjust to real balance(/10^8)
+            my $realBal = $balances->{ $currencyID } / pow( 10 , 8 );
+            
+            if ( $exchange->{ currencies }->{ $currencyID } eq $config->{ target } )
             {
-                $log->trace(sprintf( "Ignoring target currency. Bal: %15s %s" ,
-                    sprintf( "%.8f" , $balances->{ $currencyID } ) ,
+                $log->trace(
+                    sprintf( "Ignoring target currency. Bal: %15s %s" ,
+                    sprintf( "%.8f" , $realBal ) ,
                     $exchange->{ currencies }->{ $currencyID } ) );
             }
-            elsif ( $balances->{ $currencyID } >=
+            elsif ( $realBal >=
                 ( $config->{ coinmins }->{ $exchange->{ currencies }->{ $currencyID } } || 0 ) )
             {
-                $log->trace( sprintf( "Attempting to sell %15s %s" ,
-                    sprintf( "%.8f" , $balances->{ $currencyID } ) ,
+                $log->trace(
+                    sprintf( "Attempting to sell %15s %s" ,
+                    sprintf( "%.8f" , $realBal ) ,
                     $exchange->{ currencies }->{ $currencyID } ) );
                 
-                # TODO sell
-                my $price = $exchange->{ exchange }->getPrice(
-                    $exchange->{ markets }->{ $currencyID } ,
-                    $config->{ strategy } );
+                # try to sell
+                try
+                {
+                    my $order = $exchange->{ exchange }->sellOrder(
+                        $exchange->{ markets }->{ $currencyID } ,
+                        $balances->{ $currencyID } ,
+                        $config->{ strategy } );
 
-                $log->trace( "Price of $price found." );
+                    $log->info(
+                        sprintf( "Created sell order ID %d for %15s %s @ %15s %s on %s!" ,
+                        $order->{ id } , # order ID
+                        sprintf( "%.8f" , $realBal ) , # coin balance
+                        $exchange->{ currencies }->{ $currencyID } , # currency name
+                        sprintf( "%.8f" , $order->{ rate } / pow( 10 , 8 ) ) , # price/rate of order
+                        $config->{ target } , # target currency name
+                        $exchange->{ name } ) ); # exchange name
+                }
+                catch
+                {
+                    $log->error(
+                        sprintf( "Unable to create sell order for %15s %s on %s." ,
+                        sprintf( "%.8f" , $realBal ) , # formatted balance
+                        $exchange->{ currencies }->{ $currencyID } , # currency name
+                        $exchange->{ name } ) ); # exchange name
+                };
                 
                 # request delay
                 $log->trace( "Sleeping for $config->{ request }s.");
