@@ -11,7 +11,7 @@ Running
 ### Dependencies
 Requires modules Digest::SHA, HTTP::Request, JSON, Log::Log4perl, LWP::Protocol::https, LWP::UserAgent, Try::Tiny, and YAML::Tiny.
 
-####Install using CPAN
+#### Install using CPAN
 ```shell
 cpan Digest::SHA HTTP::Request JSON Log::Log4perl LWP::Protocol::https LWP::UserAgent Try::Tiny YAML::Tiny
 ```
@@ -90,3 +90,13 @@ Edit configuration in `config.yml`, or create one and pass it on the command lin
         - LTC
 ```
 *NOTE*: coinmins and excludes sections are completely optional.
+
+Donate
+------
+If you like the script and would like to donate, you can use any of these addresses!
+
+| Coin | Address                            |
+| ---- | ---------------------------------- |
+| BTC  | 15FURNXP8pcfXewySTHH3bqPJTBK1Yfu8d |
+| LTC  | LWkEeQ2pKjhR8tiz5WhSxe5uanNWLnoDcM |
+| DOGE | DF1WhZN3Gny9UoDJLuHFyJ72Dr57o43Ma8 |
