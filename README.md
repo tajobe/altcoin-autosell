@@ -3,24 +3,29 @@ altcoin-autosell
 
 Cryptocurrency/altcoin autoseller script written in Perl, loosely based on dtbartle/altcoin-autosell.
 
+Currently supports CoinEx. Support for Cryptsy coming soon.
+
+Running
+-------
+
+### Dependencies
 Requires modules Digest::SHA, HTTP::Request, JSON, Log::Log4perl, LWP::Protocol::https, LWP::UserAgent, Try::Tiny, and YAML::Tiny.  
 Install using CPAN:
 ```shell
 cpan Digest::SHA HTTP::Request JSON Log::Log4perl LWP::Protocol::https LWP::UserAgent Try::Tiny YAML::Tiny
 ```
 
+### Usage
+```shell
+./autoseller.pl # just run
+perl autoseller.pl # just run
+./autoseller.pl -usage # show usage
+```
+
+### Configuration
+Log configuration(for debugging) located in log.conf. For example, to debug the config loading, turn log level up of `log4perl.logger.Autosell.Config` to DEBUG or higher, TRACE.
+
 Edit configuration in config.yml, or create one and pass it on the command line with the -config option.
-
-Log configuration(for debugging) in log.conf.
-
-USAGE:
-```shell
-./autoseller.pl -usage
-```
-```shell
-perl autoseller.pl -usage
-```
-
 Example config(included):
 ```yaml
     ##########
@@ -34,7 +39,7 @@ Example config(included):
         # strategy to use to sell coins
         #   match-buy: Match highest buy offer(quick sell, least money)
         #   match-sell: Match lowest sell offer(takes longer, most money)
-        #   undercut-sell: Undercuts lowest sell by max between int(5%), 1 Satoshi
+        #   undercut-sell: Undercuts lowest sell by max( int(5%), 1 Satoshi )
         strategy: match-buy
         # Target currency(btc/ltc/doge)
         target: BTC
@@ -82,4 +87,4 @@ Example config(included):
         # Do not autosell LTC
         - LTC
 ```
-NOTE: coinmins and excludes sections are optional.
+*NOTE*: coinmins and excludes sections are completely optional.

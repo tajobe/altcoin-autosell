@@ -96,17 +96,17 @@ while ( 1 )
             if ( $exchange->{ currencies }->{ $currencyID } eq $config->{ target } )
             {
                 $log->trace(
-                    sprintf( "Ignoring target currency. Bal: %15s %s" ,
-                    sprintf( "%.8f" , $realBal ) ,
-                    $exchange->{ currencies }->{ $currencyID } ) );
+                    sprintf( "Ignoring target currency. Bal: %.8f %s" ,
+                        $realBal ,
+                        $exchange->{ currencies }->{ $currencyID } ) );
             }
             elsif ( $realBal >=
                 ( $config->{ coinmins }->{ $exchange->{ currencies }->{ $currencyID } } || 0 ) )
             {
                 $log->trace(
-                    sprintf( "Attempting to sell %15s %s" ,
-                    sprintf( "%.8f" , $realBal ) ,
-                    $exchange->{ currencies }->{ $currencyID } ) );
+                    sprintf( "Attempting to sell %.8f %s" ,
+                        $realBal ,
+                        $exchange->{ currencies }->{ $currencyID } ) );
                 
                 # try to sell
                 try
@@ -115,23 +115,23 @@ while ( 1 )
                         $exchange->{ markets }->{ $currencyID } ,
                         $balances->{ $currencyID } ,
                         $config->{ strategy } );
-
+                    
                     $log->info(
-                        sprintf( "Created sell order ID %d for %15s %s @ %15s %s on %s!" ,
-                        $order->{ id } , # order ID
-                        sprintf( "%.8f" , $realBal ) , # coin balance
-                        $exchange->{ currencies }->{ $currencyID } , # currency name
-                        sprintf( "%.8f" , $order->{ rate } / pow( 10 , 8 ) ) , # price/rate of order
-                        $config->{ target } , # target currency name
-                        $exchange->{ name } ) ); # exchange name
+                        sprintf( "Created sell order ID %d for %.8f %s @ %.8f %s on %s!" ,
+                            $order->{ id } , # order ID
+                            $realBal , # coin balance
+                            $exchange->{ currencies }->{ $currencyID } , # currency name
+                            $order->{ rate } / pow( 10 , 8 ) , # price/rate of order
+                            $config->{ target } , # target currency name
+                            $exchange->{ name } ) ); # exchange name
                 }
                 catch
                 {
                     $log->error(
-                        sprintf( "Unable to create sell order for %15s %s on %s." ,
-                        sprintf( "%.8f" , $realBal ) , # formatted balance
-                        $exchange->{ currencies }->{ $currencyID } , # currency name
-                        $exchange->{ name } ) ); # exchange name
+                        sprintf( "Unable to create sell order for %.8f %s on %s." ,
+                            $realBal , # formatted balance
+                            $exchange->{ currencies }->{ $currencyID } , # currency name
+                            $exchange->{ name } ) ); # exchange name
                 };
                 
                 # request delay
@@ -140,8 +140,8 @@ while ( 1 )
             }
             else
             {
-                $log->trace( sprintf( "Ignoring balance of %20s %s, below min amount." ,
-                    sprintf( "%.8f" , $balances->{ $currencyID } ) ,
+                $log->trace( sprintf( "Ignoring balance of %.8f %s, below min amount." ,
+                    $realBal ,
                     $exchange->{ currencies }->{ $currencyID } ) );
             }
         }
@@ -168,8 +168,11 @@ sub usage
           "    -config=<filename>: Config file(optional)\n" .
           "\n" .
           "Usage:\n" .
-          "    ./$0\n" .
-          "    ./$0 -usage\n" .
-          "    ./$0 -config=<filename>\n" .
+          "    $0\n" .
+          "    $0 -usage\n" .
+          "    $0 -config=<filename>\n" .
           "\n";
+    
+    # done
+    exit 0;
 }
