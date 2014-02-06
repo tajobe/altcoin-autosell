@@ -1,7 +1,7 @@
 altcoin-autosell
 ================
 
-Cryptocurrency/altcoin autoseller script written in Perl, loosely based on dtbartle/altcoin-autosell.
+Extremely configurable cryptocurrency/altcoin autoseller script written in Perl, loosely based on dtbartle's python "altcoin-autosell".
 
 Currently supports CoinEx. Support for Cryptsy coming soon.
 
@@ -9,7 +9,8 @@ Running
 -------
 
 ### Dependencies
-Requires modules Digest::SHA, HTTP::Request, JSON, Log::Log4perl, LWP::Protocol::https, LWP::UserAgent, Try::Tiny, and YAML::Tiny.  
+Requires modules Digest::SHA, HTTP::Request, JSON, Log::Log4perl, LWP::Protocol::https, LWP::UserAgent, Try::Tiny, and YAML::Tiny.
+
 Install using CPAN:
 ```shell
 cpan Digest::SHA HTTP::Request JSON Log::Log4perl LWP::Protocol::https LWP::UserAgent Try::Tiny YAML::Tiny
@@ -23,9 +24,9 @@ perl autoseller.pl # just run
 ```
 
 ### Configuration
-Log configuration(for debugging) located in log.conf. For example, to debug the config loading, turn log level up of `log4perl.logger.Autosell.Config` to DEBUG or higher, TRACE.
+Log configuration(for debugging) located in log.conf. For example, to debug the config loading, turn log level up of `log4perl.logger.Autosell.Config` to DEBUG or higher, TRACE. Alternatively, if you only want to show errors, change the log level up to WARN or ERROR. See [Log4Perl](http://search.cpan.org/~mschilli/Log-Log4perl-1.42/lib/Log/Log4perl.pm) for more.
 
-Edit configuration in config.yml, or create one and pass it on the command line with the -config option.
+Edit configuration in `config.yml`, or create one and pass it on the command line with `-config '/path/to/config.yml'`.
 Example config(included):
 ```yaml
     ##########
