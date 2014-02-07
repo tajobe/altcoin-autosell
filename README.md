@@ -23,6 +23,8 @@ perl autoseller.pl # just run
 ./autoseller.pl -usage # show usage
 ```
 
+The script will log to the console as well as "autosell.log" in the working directory. To change this, edit the log config.
+
 ### Configuration
 Log configuration(for debugging) located in log.conf. For example, to debug the config loading, turn log level up of `log4perl.logger.Autosell.Config` to DEBUG or higher, TRACE. Alternatively, if you only want to show errors, change the log level up to WARN or ERROR. See [Log4Perl](http://search.cpan.org/~mschilli/Log-Log4perl-1.42/lib/Log/Log4perl.pm) for more.
 

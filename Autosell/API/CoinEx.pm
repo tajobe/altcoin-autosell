@@ -345,7 +345,7 @@ sub _request
     else
     {
         $log->error( "$self->{ name } error on request: '$URL'." );
-        $log->error( $response->error_as_HTML );
+        $log->error( $response->status_line );
         die "Request error!"; # error out
     }
 }

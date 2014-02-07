@@ -23,7 +23,7 @@ $log->info;
 $log->info( "Autoseller started." );
 
 # catch interrupt
-$SIG{INT} = sub { $log->info( "sigint '$!' received, quitting." ); die; };
+$SIG{INT} = sub { $log->info( "sigint '$!' received, quitting." ); exit 0; };
 
 GetOptions( "usage|help|h|u"               => \&usage ,
             "config|file|configfile|cfg:s" => \$configFile );
