@@ -36,43 +36,7 @@ $config->load();
 my $exchanges = []; # array of exchanges(each a hash)
 for my $exchange ( keys % { $config->{ apikeys } } )
 {
-    $log->debug( "Loading $exchange..." );
-
-    my $exchangeref = { name => $exchange };
-    
-    # decide what exchange we have
-    if ( lc( $exchange ) eq 'coinex' )
-    {
-        # load exchange
-        $exchangeref->{ exchange } =
-            Autosell::API::CoinEx->new(
-                $exchange ,
-                $config->{ apikeys }->{ $exchange }->{ key } ,
-                $config->{ apikeys }->{ $exchange }->{ secret } );
-    }
-    else
-    {
-        $log->error( "Unsupported exchange: $exchange" );
-        next;
-    }
-    
-    # attempt to grab currencies from exchange
-    $exchangeref->{ currencies } =
-        $exchangeref->{ exchange }->currencies( @ { $config->{ excludes } } );
-            
-    # attempt to grab markets exchange
-    $exchangeref->{ markets } =
-        $exchangeref->{ exchange }->markets(
-            $config->{ target } , $exchangeref->{ currencies } );
-
-    # log what we've found
-    $log->debug( "Found " . keys( % { $exchangeref->{ currencies } } ) .
-        " relevant currencies and " .
-        keys( % { $exchangeref->{ markets } } ) . " markets for them." );
-    
-    push(@$exchanges, $exchangeref );
-    
-    $log->info( "Monitoring $exchange." );
+    &loadExchange( $exchange );
 }
 
 # error check, shouldn't ever happen as config checks for this
@@ -84,72 +48,135 @@ while ( 1 )
     foreach my $exchange ( @$exchanges )
     {
         $log->trace( "Querying balances on $exchange->{ name }..." );
-        my $balances = $exchange->{ exchange }->balances(
-            keys % { $exchange->{ currencies } } );
-
-        # try to trade balances
-        foreach my $currencyID ( keys % { $balances } )
+        try
         {
-            # adjust to real balance(/10^8)
-            my $realBal = $balances->{ $currencyID } / pow( 10 , 8 );
+            my $balances = $exchange->{ exchange }->balances(
+                keys % { $exchange->{ currencies } } );
             
-            if ( $exchange->{ currencies }->{ $currencyID } eq $config->{ target } )
+            # try to trade balances
+            foreach my $currencyID ( keys % { $balances } )
             {
-                $log->trace(
-                    sprintf( "Ignoring target currency. Bal: %.8f %s" ,
-                        $realBal ,
-                        $exchange->{ currencies }->{ $currencyID } ) );
-            }
-            elsif ( $realBal >=
-                ( $config->{ coinmins }->{ $exchange->{ currencies }->{ $currencyID } } || 0 ) )
-            {
-                $log->trace(
-                    sprintf( "Attempting to sell %.8f %s" ,
-                        $realBal ,
-                        $exchange->{ currencies }->{ $currencyID } ) );
+                # adjust to real balance(/10^8)
+                my $realBal = $balances->{ $currencyID } / pow( 10 , 8 );
                 
-                # try to sell
-                try
+                if ( $exchange->{ currencies }->{ $currencyID } eq $config->{ target } )
                 {
-                    my $order = $exchange->{ exchange }->sellOrder(
-                        $exchange->{ markets }->{ $currencyID } ,
-                        $balances->{ $currencyID } ,
-                        $config->{ strategy } );
-                    
-                    $log->info(
-                        sprintf( "Created sell order ID %d for %.8f %s @ %.8f %s on %s!" ,
-                            $order->{ id } , # order ID
-                            $realBal , # coin balance
-                            $exchange->{ currencies }->{ $currencyID } , # currency name
-                            $order->{ rate } / pow( 10 , 8 ) , # price/rate of order
-                            $config->{ target } , # target currency name
-                            $exchange->{ name } ) ); # exchange name
+                    $log->trace(
+                        sprintf( "Ignoring target currency. Bal: %.8f %s" ,
+                            $realBal ,
+                            $exchange->{ currencies }->{ $currencyID } ) );
                 }
-                catch
+                elsif ( $realBal >=
+                    ( $config->{ coinmins }->{ $exchange->{ currencies }->{ $currencyID } } || 0 ) )
                 {
-                    $log->error(
-                        sprintf( "Unable to create sell order for %.8f %s on %s." ,
-                            $realBal , # formatted balance
-                            $exchange->{ currencies }->{ $currencyID } , # currency name
-                            $exchange->{ name } ) ); # exchange name
-                };
-                
-                # request delay
-                $log->trace( "Sleeping for $config->{ request }s.");
-                sleep $config->{ request };
-            }
-            else
-            {
-                $log->trace( sprintf( "Ignoring balance of %.8f %s, below min amount." ,
-                    $realBal ,
-                    $exchange->{ currencies }->{ $currencyID } ) );
+                    $log->trace(
+                        sprintf( "Attempting to sell %.8f %s" ,
+                            $realBal ,
+                            $exchange->{ currencies }->{ $currencyID } ) );
+                    
+                    # try to sell
+                    try
+                    {
+                        my $order = $exchange->{ exchange }->sellOrder(
+                            $exchange->{ markets }->{ $currencyID } ,
+                            $balances->{ $currencyID } ,
+                            $config->{ strategy } );
+                        
+                        $log->info(
+                            sprintf( "Created sell order ID %d for %.8f %s @ %.8f %s on %s!" ,
+                                $order->{ id } , # order ID
+                                $realBal , # coin balance
+                                $exchange->{ currencies }->{ $currencyID } , # currency name
+                                $order->{ rate } / pow( 10 , 8 ) , # price/rate of order
+                                $config->{ target } , # target currency name
+                                $exchange->{ name } ) ); # exchange name
+                    }
+                    catch
+                    {
+                        $log->error(
+                            sprintf( "Unable to create sell order for %.8f %s on %s." ,
+                                $realBal , # formatted balance
+                                $exchange->{ currencies }->{ $currencyID } , # currency name
+                                $exchange->{ name } ) ); # exchange name
+                    };
+                    
+                    # request delay
+                    $log->trace( "Sleeping for $config->{ request }s.");
+                    sleep $config->{ request };
+                }
+                else
+                {
+                    $log->trace( sprintf( "Ignoring balance of %.8f %s, below min amount." ,
+                        $realBal ,
+                        $exchange->{ currencies }->{ $currencyID } ) );
+                }
             }
         }
+        catch
+        {
+            # sleep if we errored out on a request
+            $log->trace( "Sleeping for $config->{ request }s.");
+            sleep $config->{ request };
+        };
     }
     
     # sleep until it's time for next poll
     $log->trace( "Sleeping for $config->{ poll }s.");
     sleep $config->{ poll };
+}
+
+####################################################################################################
+# Load exchange from config
+#
+# Params:
+#   exchange: name of exchange we're loading
+####################################################################################################
+sub loadExchange
+{
+    my $exchange = shift || '';
+
+    $log->debug( "Loading $exchange..." );
+
+    my $exchangeref = { name => $exchange };
+    
+    # load coinex API
+    if ( $exchange =~ /^(coinex)/i )
+    {
+        # load exchange
+        $exchangeref->{ exchange } =
+            Autosell::API::CoinEx->new(
+                $exchange ,
+                $config->{ apikeys }->{ $exchange }->{ key } ,
+                $config->{ apikeys }->{ $exchange }->{ secret } );
+    }
+    # TODO other exchanges
+    else
+    {
+        $log->error( "Unsupported exchange: $exchange" );
+        return;
+    }
+    
+    # attempt to grab currencies from exchange
+    $exchangeref->{ currencies } =
+        $exchangeref->{ exchange }->currencies( @ { $config->{ excludes } } );
+    
+    # attempt to grab markets exchange
+    $exchangeref->{ markets } =
+        $exchangeref->{ exchange }->markets(
+            $config->{ target } , $exchangeref->{ currencies } );
+    
+    # log what we've found
+    $log->debug( "Found " . keys( % { $exchangeref->{ currencies } } ) .
+        " relevant currencies and " .
+        keys( % { $exchangeref->{ markets } } ) . " markets for them." );
+    
+    push(@$exchanges, $exchangeref );
+    
+    $log->info( "Monitoring $exchange." );
+    
+    # sleep for request delay so we don't get a "too many requests" error
+    $log->trace( "Sleeping for $config->{ request }s.");
+    sleep $config->{ request };
 }
 
 ####################################################################################################

@@ -52,13 +52,13 @@ Edit configuration in `config.yml`, or create one and pass it on the command lin
     # Any number of API keys for us to monitor/use
     # 
     # Format:
-    #   exchange: (coinex)
+    #   exchangename-nickname:
     #       key: 'API key'
     #       secret: 'API secret'
     ##########
     apikeys:
         # exchange the keys are for(determines what API we need to use)
-        coinex:
+        coinex-1:
             # API key
             key: ''
             # API secret

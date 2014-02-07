@@ -153,7 +153,8 @@ sub markets
     }
     
     # shouldn't happen
-    $log->error_die( "Could not find target currency '$target' in currencies!" ) unless ( $targetID );
+    $log->error_die( "Could not find target currency '$target' in currencies!" )
+        unless ( $targetID );
     
     # build currency ID => market ID hash of markets
     $log->debug( "Querying $self->{ name } for applicable markets..." );
@@ -164,7 +165,8 @@ sub markets
         foreach my $market ( @$response )
         {
             $markets->{ $market->{ currency_id } } = $market->{ id }
-                if ( exists $currencies->{ $market->{ currency_id } } && $market->{ market_id } == $targetID );
+                if ( exists $currencies->{ $market->{ currency_id } } &&
+                    $market->{ market_id } == $targetID );
         }
         
         return $markets;
@@ -311,7 +313,9 @@ sub _request
     # set API keys/sign data if private, undef them if not
     if ( $private )
     {
-        $self->{ ua }->default_header( 'API-Key' => $self->{ key } , 'API-Sign' => hmac_sha512_hex( $post , $self->{ secret } ) ); # signed data
+        $self->{ ua }->default_header(
+            'API-Key' => $self->{ key } ,
+            'API-Sign' => hmac_sha512_hex( $post , $self->{ secret } ) ); # signed data
     }
     else
     {
@@ -336,16 +340,14 @@ sub _request
         # ensure we got data we care about
         unless ( $json->{ $root } )
         {
-            $log->error( "$self->{ name } error on request: '$URL." );
-            $log->error( "Invalid response! Bad data." );
+            $log->error( "$self->{ name } error on request: '$URL': Bad data." );
             die "Invalid response! Bad data.";
         }
         return $json->{ $root }
     }
     else
     {
-        $log->error( "$self->{ name } error on request: '$URL'." );
-        $log->error( $response->status_line );
+        $log->error( "$self->{ name } error on request: '$URL': " . $response->status_line );
         die "Request error!"; # error out
     }
 }
