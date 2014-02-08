@@ -111,6 +111,7 @@ sub sellOrder
 # 
 # Params:
 #   call: Method/API call relative to API URL(http://URL/call)
+#   jsonRoot: root of JSON response data
 #   method: http method(GET or POST)
 #   private: private(1) or public(0) call
 #   post: JSON encoded POST data(optional)

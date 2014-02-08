@@ -77,7 +77,7 @@ sub balances
     try
     {
         my $balances = {};
-        my $response = $self->_request( 'balances' , 'GET' , 1 );
+        my $response = $self->_request( 'balances' , 'balances' , 'GET' , 1 );
         foreach my $currency ( @$response )
         {
             $balances->{ $currency->{ currency_id } } = $currency->{ amount }
@@ -282,7 +282,7 @@ sub sellOrder
     try
     {
         return ( $self->_request(
-            'orders' , 'POST' , 1 , encode_json( { 'order' => $order } ) ) )->[0];
+            'orders' , 'order' , 'POST' , 1 , encode_json( { 'order' => $order } ) ) );
     }
     catch
     {
@@ -296,6 +296,7 @@ sub sellOrder
 # 
 # Params:
 #   call: Method/API call relative to API URL(http://URL/call)
+#   jsonRoot: root of JSON response data
 #   method: http method(GET or POST)
 #   private: private(1) or public(0) call
 #   post: JSON encoded POST data(optional)
@@ -306,6 +307,7 @@ sub _request
 {
     my $self = shift;
     my $call = shift;
+    my $jsonRoot = shift || (split( /[\/?]/ , $call ))[0];
     my $method = shift || 'GET';
     my $private = shift || 0;
     my $post = shift || '';
@@ -333,17 +335,14 @@ sub _request
     if ( $response->is_success )
     {
         my $json = decode_json( $response->decoded_content );
-
-        # root of JSON response is always word immediately following base API URL
-        my $root = (split( /[\/?]/ , $call ))[0];
         
         # ensure we got data we care about
-        unless ( $json->{ $root } )
+        unless ( $json->{ $jsonRoot } )
         {
             $log->error( "$self->{ name } error on request: '$URL': Bad data." );
             die "Invalid response! Bad data.";
         }
-        return $json->{ $root }
+        return $json->{ $jsonRoot }
     }
     else
     {
