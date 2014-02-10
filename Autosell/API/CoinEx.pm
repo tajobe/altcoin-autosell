@@ -104,7 +104,7 @@ sub balances
 sub currencies
 {
     my $self = shift;
-    my @tempExcludes = shift;
+    my @tempExcludes = @_;
     my %excludes;
     @excludes{ @tempExcludes }=();
     
