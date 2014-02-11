@@ -11,6 +11,7 @@ use Try::Tiny; # error handling
 
 # our modules
 use Autosell::API::CoinEx; # CoinEx API
+use Autosell::API::Cryptsy; # Cryptsy API
 use Autosell::Config qw( load ); # our config loader
 
 # init
@@ -150,6 +151,15 @@ sub loadExchange
                 $config->{ apikeys }->{ $exchange }->{ secret } );
     }
     # TODO other exchanges
+    elsif ( $exchange =~ /^(cryptsy)/i )
+    {
+        # load exchange
+        $exchangeref->{ exchange } =
+            Autosell::API::Cryptsy->new(
+                $exchange ,
+                $config->{ apikeys }->{ $exchange }->{ key } ,
+                $config->{ apikeys }->{ $exchange }->{ secret } );
+    }
     else
     {
         $log->error( "Unsupported exchange: $exchange" );

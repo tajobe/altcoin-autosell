@@ -9,8 +9,9 @@ use strict;
 use Switch;
 
 # dependencies
+use Data::URIEncode qw( complex_to_query ); # encode hash for POSTing
 use Digest::SHA qw( hmac_sha512_hex ); # HMAC-SHA512 signing
-use JSON qw( encode_json decode_json ); # JSON encode/decode
+use JSON qw( decode_json ); # JSON encode/decode
 use Try::Tiny; # error handling
 
 # logger
@@ -53,9 +54,10 @@ sub _init
     
     # set headers
     $self->{ ua }->default_header(
-        'Content-type' => 'application/json',
+        'Content-type' => 'application/x-www-form-urlencode',
         'Accept' => 'application/json',
-        'User-Agent' => 'altcoin-autoseller-perl' );
+        'User-Agent' => 'altcoin-autoseller-perl',
+        'Key' => $self->{ key } );
     
     $log = Log::Log4perl->get_logger( __PACKAGE__ );
 }
@@ -83,7 +85,29 @@ sub balances
 ####################################################################################################
 sub currencies
 {
-    die "Not implemented.";
+    my $self = shift;
+    my @tempExcludes = @_;
+    my %excludes;
+    @excludes{ @tempExcludes }=();
+    
+    # build hashref of currencies
+    $log->debug( "Querying $self->{ name } for currencies..." );
+    try
+    {
+        my $currencies = {};
+        my $response = $self->_request( 'getmarkets' );
+        foreach my $currency ( @$response )
+        {
+            $currencies->{ $currency->{ marketid } } = $currency->{ 'primary_currency_code' }
+                unless ( exists $excludes{ uc( $currency->{ name } ) }  );
+        }
+        
+        return $currencies;
+    }
+    catch
+    {
+        $log->error_die( "Unable to get currencies from $self->{ name }!" );
+    };
 }
 
 ####################################################################################################
@@ -133,17 +157,53 @@ sub sellOrder
 # Send API request
 # 
 # Params:
-#   call: Method/API call relative to API URL(http://URL/call)
-#   jsonRoot: root of JSON response data
-#   method: http method(GET or POST)
-#   private: private(1) or public(0) call
-#   post: JSON encoded POST data(optional)
+#   method: Method/API call relative to API URL(http://URL/call)
+#   post: hashref of POST data(optional)
 # 
-# Returns JSON response
+# Returns JSON response return data
 ####################################################################################################
 sub _request
 {
-    die "Not implemented!";
+    my $self = shift;
+    my $method = shift;
+    my $post = shift || {};
+    
+    # add required POST data
+    $post->{ method } = $method; # API method
+    $post->{ nonce } = time; # ever increasing nonce var
+
+    # encode data
+    my $postData = complex_to_query $post;
+
+    $log->debug( "POSTing: $postData" );
+    
+    # sign data
+    $self->{ ua }->default_header(
+        'Sign' => hmac_sha512_hex( $postData , $self->{ secret } ) ); # signed data
+
+    # form request
+    my $request = HTTP::Request->new(
+        'POST' , $self->{ url } , $self->{ ua }->default_headers , $postData);
+    
+    # perform request and get response
+    my $response = $self->{ ua }->request( $request );
+    
+    # successful request
+    if ( $response->is_success )
+    {
+        my $json = decode_json( $response->decoded_content );
+        
+        # ensure API call was success
+        unless ( $json->{ success } )
+        {
+            $log->error_die( "$self->{ name } error on request: '$self->{ url }': " . $json->{ error } );
+        }
+        return $json->{ return }
+    }
+    else
+    {
+        $log->error_die( "$self->{ name } error on request: '$self->{ url }': " . $response->status_line );
+    }
 }
 
 1;

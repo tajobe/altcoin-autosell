@@ -88,7 +88,6 @@ sub balances
     }
     catch
     {
-        $log->error( "Error: $_" );
         $log->error_die( "Unable to get balances from $self->{ name }!" );
     };
 }
@@ -126,7 +125,6 @@ sub currencies
     }
     catch
     {
-        $log->error( "Error: $_" );
         $log->error_die( "Unable to get currencies from $self->{ name }!" );
     };
 }
@@ -173,7 +171,6 @@ sub markets
     }
     catch
     {
-        $log->error( "Error: $_" );
         $log->error_die( "Unable to get markets from $self->{ name }!" );
     };
 }
@@ -245,7 +242,6 @@ sub getPrice
     }
     catch
     {
-        $log->error( "Error: $_" );
         $log->error_die( "Unable to get prices from $self->{ name }!" );
     };
 }
@@ -286,7 +282,6 @@ sub sellOrder
     }
     catch
     {
-        $log->error( "Error: $_" );
         $log->error_die( "Unable to create order on $self->{ name }!" );
     };
 }
@@ -339,15 +334,13 @@ sub _request
         # ensure we got data we care about
         unless ( $json->{ $jsonRoot } )
         {
-            $log->error( "$self->{ name } error on request: '$URL': Bad data." );
-            die "Invalid response! Bad data.";
+            $log->error_die( "$self->{ name } error on request: '$URL': Bad data." );
         }
         return $json->{ $jsonRoot }
     }
     else
     {
-        $log->error( "$self->{ name } error on request: '$URL': " . $response->status_line );
-        die "Request error!"; # error out
+        $log->error_die( "$self->{ name } error on request: '$URL': " . $response->status_line );
     }
 }
 
