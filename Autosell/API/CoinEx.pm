@@ -6,7 +6,6 @@ use Exporter;
 use List::Util qw( max );
 use warnings;
 use strict;
-use Switch;
 
 # dependencies
 use Digest::SHA qw( hmac_sha512_hex ); # HMAC-SHA512 signing
@@ -204,25 +203,22 @@ sub getPrice
             # ignore completed or cancelled trades
             if ( ! ( $trade->{ complete } || $trade->{ cancelled } ) )
             {
-                switch ( $strategy )
+                # match highest buy price
+                if ( $strategy =~ /^(MATCH-BUY)$/i )
                 {
-                    # match highest buy price
-                    case 'MATCH-BUY'
-                    {
-                        $price = $trade->{ rate }
-                            if ( $trade->{ bid } && $price < $trade->{ rate } );
-                    }
-                    # match or undercut lowest sell price
-                    case /^(MATCH-SELL|UNDERCUT-SELL)$/i
-                    {
-                        $price = $trade->{ rate }
-                            if ( ! $trade->{ bid } &&
-                                ($price > $trade->{ rate } || $price == 0));
-                    }
-                    else
-                    {
-                        $log->error( "Unknown price strategy '$strategy'!" );
-                    }
+                    $price = $trade->{ rate }
+                        if ( $trade->{ bid } && $price < $trade->{ rate } );
+                }
+                # match or undercut lowest sell price
+                elsif ( $strategy =~ /^(MATCH-SELL|UNDERCUT-SELL)$/i )
+                {
+                    $price = $trade->{ rate }
+                        if ( ! $trade->{ bid } &&
+                            ($price > $trade->{ rate } || $price == 0));
+                }
+                else
+                {
+                    $log->error( "Unknown price strategy '$strategy'!" );
                 }
             }
         }

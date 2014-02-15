@@ -39,7 +39,7 @@ Edit configuration in `config.yml`, or create one and pass it on the command lin
         # Amount of time between polls
         poll-time: 300
         # Delay when we are going to send a request
-        request-delay: 5
+        request-delay: 10
         # strategy to use to sell coins
         #   match-buy: Match highest buy offer(quick sell, least money)
         #   match-sell: Match lowest sell offer(takes longer, most money)

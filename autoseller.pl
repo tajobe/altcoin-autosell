@@ -52,6 +52,10 @@ while ( 1 )
         {
             my $balances = $exchange->{ exchange }->balances(
                 keys % { $exchange->{ currencies } } );
+                    
+            # request delay
+            $log->trace( "Sleeping for $config->{ request }s.");
+            sleep $config->{ request };
             
             # try to trade balances
             foreach my $currencyID ( keys % { $balances } )
