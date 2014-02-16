@@ -58,10 +58,21 @@ while ( 1 )
             sleep $config->{ request };
             
             # try to trade balances
-            foreach my $currencyID ( keys % { $balances } )
+            TRADE: foreach my $currencyID ( keys % { $balances } )
             {
                 # adjust to real balance(/10^8)
                 my $realBal = $balances->{ $currencyID } / pow( 10 , 8 );
+                
+                # ignore currencies we don't have a market for
+                unless ( $exchange->{ markets }->{ $currencyID } )
+                {
+                    $log->trace(
+                        sprintf( "No trade pair for %s, ignoring %.8f %s." ,
+                            $exchange->{ currencies }->{ $currencyID } ,
+                            $realBal ,
+                            $exchange->{ currencies }->{ $currencyID } ) );
+                    next TRADE;
+                }
                 
                 if ( $exchange->{ currencies }->{ $currencyID } eq $config->{ target } )
                 {
